@@ -1,6 +1,7 @@
 const { z } = require('zod');
 const prisma = require('../config/prisma');
 const createError = require('http-errors');
+const { sendNotification } = require('../services/notification.service');
 
 // Helper to log admin actions
 const logAdminAction = async (adminId, action, details) => {
@@ -120,6 +121,14 @@ const updateUserStatus = async (req, res, next) => {
 
     await logAdminAction(req.user.id, `USER_${status}`, `Admin updated user ${id} status to ${status}`);
 
+    await sendNotification({
+      userId: id,
+      title: 'Account Status Updated',
+      message: `Your account has been ${status.toLowerCase()} by an administrator.`,
+      type: 'ALERT',
+      relatedEntityId: id
+    });
+
     res.json({ success: true, message: `User status updated to ${status}` });
   } catch (error) {
     if (error instanceof z.ZodError) return next(createError(400, error.errors[0].message));
@@ -163,6 +172,14 @@ const updateRestaurantVerification = async (req, res, next) => {
     });
 
     await logAdminAction(req.user.id, 'VERIFY_RESTAURANT', `Admin set restaurant ${id} verification to ${status}`);
+
+    await sendNotification({
+      userId: restaurant.userId,
+      title: 'Verification Status Updated',
+      message: `Your restaurant profile verification status is now ${status}.`,
+      type: 'STATUS_CHANGED',
+      relatedEntityId: restaurant.id
+    });
 
     res.json({ success: true, message: `Restaurant verification updated to ${status}`, data: { restaurant } });
   } catch (error) {
@@ -208,6 +225,14 @@ const updateNgoVerification = async (req, res, next) => {
 
     await logAdminAction(req.user.id, 'VERIFY_NGO', `Admin set NGO ${id} verification to ${status}`);
 
+    await sendNotification({
+      userId: ngo.userId,
+      title: 'Verification Status Updated',
+      message: `Your NGO profile verification status is now ${status}.`,
+      type: 'STATUS_CHANGED',
+      relatedEntityId: ngo.id
+    });
+
     res.json({ success: true, message: `NGO verification updated to ${status}`, data: { ngo } });
   } catch (error) {
     if (error instanceof z.ZodError) return next(createError(400, error.errors[0].message));
@@ -247,6 +272,14 @@ const updateVolunteerVerification = async (req, res, next) => {
     });
 
     await logAdminAction(req.user.id, 'VERIFY_VOLUNTEER', `Admin set volunteer ${id} verification to ${status}`);
+
+    await sendNotification({
+      userId: volunteer.userId,
+      title: 'Verification Status Updated',
+      message: `Your volunteer profile verification status is now ${status}.`,
+      type: 'STATUS_CHANGED',
+      relatedEntityId: volunteer.id
+    });
 
     res.json({ success: true, message: `Volunteer verification updated to ${status}`, data: { volunteer } });
   } catch (error) {

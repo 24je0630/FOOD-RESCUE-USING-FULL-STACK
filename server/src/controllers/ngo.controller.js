@@ -1,6 +1,7 @@
 const { z } = require('zod');
 const prisma = require('../config/prisma');
 const createError = require('http-errors');
+const { sendNotification } = require('../services/notification.service');
 
 // Schema for filtering and discovering donations
 const discoverQuerySchema = z.object({
@@ -136,6 +137,21 @@ const requestPickup = async (req, res, next) => {
       success: true,
       data: { pickupRequest: result },
     });
+
+    // Notify Restaurant
+    const restaurant = await prisma.restaurantProfile.findFirst({
+      where: { id: donation.restaurantId }
+    });
+
+    if (restaurant) {
+      await sendNotification({
+        userId: restaurant.userId,
+        title: 'New Pickup Request',
+        message: `${ngo.organizationName} has requested to pick up your donation: ${donation.title}.`,
+        type: 'REQUEST_MADE',
+        relatedEntityId: donation.id
+      });
+    }
   } catch (error) {
     next(error);
   }

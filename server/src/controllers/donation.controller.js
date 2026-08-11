@@ -1,6 +1,7 @@
 const { z } = require('zod');
 const prisma = require('../config/prisma');
 const createError = require('http-errors');
+const { sendNotification, sendNotificationToRole } = require('../services/notification.service');
 
 const createDonationSchema = z.object({
   title: z.string().min(3),
@@ -43,6 +44,15 @@ const createDonation = async (req, res, next) => {
     res.status(201).json({
       success: true,
       data: { donation },
+    });
+
+    // Notify all NGOs
+    await sendNotificationToRole({
+      role: 'NGO',
+      title: 'New Food Donation Available',
+      message: `${restaurant.organizationName} has posted a new donation of ${validatedData.category}.`,
+      type: 'DONATION_CREATED',
+      relatedEntityId: donation.id
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -251,12 +261,29 @@ const acceptPickupRequest = async (req, res, next) => {
         }
       });
 
-      return { request: updatedReq, assignment };
+      return { request: updatedReq, assignment, availableVolunteer };
     });
 
     res.json({
       success: true,
-      data: updatedData,
+      data: { request: updatedData.request, assignment: updatedData.assignment },
+    });
+
+    // Notifications
+    await sendNotification({
+      userId: request.ngo.userId,
+      title: 'Pickup Request Accepted',
+      message: `${restaurant.organizationName} accepted your pickup request. A volunteer has been assigned.`,
+      type: 'STATUS_CHANGED',
+      relatedEntityId: request.donationId
+    });
+
+    await sendNotification({
+      userId: updatedData.availableVolunteer.userId,
+      title: 'New Volunteer Assignment',
+      message: `You have been assigned to pick up food from ${restaurant.organizationName}.`,
+      type: 'ASSIGNMENT_UPDATED',
+      relatedEntityId: updatedData.assignment.id
     });
   } catch (error) {
     next(error);

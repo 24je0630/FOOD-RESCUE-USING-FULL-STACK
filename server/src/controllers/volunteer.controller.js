@@ -1,6 +1,7 @@
 const { z } = require('zod');
 const prisma = require('../config/prisma');
 const createError = require('http-errors');
+const { sendNotification } = require('../services/notification.service');
 
 // Toggle volunteer availability
 const toggleAvailability = async (req, res, next) => {
@@ -130,6 +131,46 @@ const updateAssignmentStatus = async (req, res, next) => {
       success: true,
       data: { assignment: updatedAssignment },
     });
+
+    // Notify Restaurant and NGO
+    const fullAssignment = await prisma.volunteerAssignment.findUnique({
+      where: { id: assignment.id },
+      include: {
+        pickupRequest: {
+          include: {
+            donation: { include: { restaurant: true } },
+            ngo: true
+          }
+        }
+      }
+    });
+
+    if (fullAssignment) {
+      const ngoUserId = fullAssignment.pickupRequest.ngo.userId;
+      const restUserId = fullAssignment.pickupRequest.donation.restaurant.userId;
+
+      let msg = `Volunteer status updated to ${status}.`;
+      if (status === 'PICKUP_STARTED') msg = 'A volunteer is on their way to pick up the donation.';
+      else if (status === 'FOOD_COLLECTED') msg = 'The volunteer has collected the food.';
+      else if (status === 'DELIVERED') msg = 'The volunteer has delivered the food.';
+
+      await sendNotification({
+        userId: ngoUserId,
+        title: 'Pickup Status Update',
+        message: msg,
+        type: 'STATUS_CHANGED',
+        relatedEntityId: assignment.id
+      });
+
+      await sendNotification({
+        userId: restUserId,
+        title: 'Pickup Status Update',
+        message: msg,
+        type: 'STATUS_CHANGED',
+        relatedEntityId: assignment.id
+      });
+    }
+
   } catch (error) {
     next(error);
   }
