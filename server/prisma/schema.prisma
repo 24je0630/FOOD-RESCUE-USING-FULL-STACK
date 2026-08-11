@@ -1,0 +1,248 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  RESTAURANT
+  NGO
+  VOLUNTEER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum DonationCategory {
+  PRODUCE
+  BAKED_GOODS
+  PREPARED_MEALS
+  DAIRY
+  MEAT
+  BEVERAGES
+  OTHER
+}
+
+enum DonationStatus {
+  AVAILABLE
+  REQUESTED
+  ASSIGNED
+  PICKED_UP
+  DELIVERED
+  CANCELLED
+  EXPIRED
+}
+
+enum PickupRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+  COMPLETED
+}
+
+enum AssignmentStatus {
+  ASSIGNED
+  ACCEPTED
+  PICKUP_STARTED
+  FOOD_COLLECTED
+  DELIVERED
+  COMPLETED
+  CANCELLED
+}
+
+enum NotificationType {
+  INFO
+  ALERT
+  DONATION_CREATED
+  REQUEST_MADE
+  ASSIGNMENT_UPDATED
+  STATUS_CHANGED
+}
+
+model User {
+  id       String     @id @default(uuid())
+  email    String     @unique
+  password String
+  role     Role
+  status   UserStatus @default(ACTIVE)
+
+  restaurantProfile RestaurantProfile?
+  ngoProfile        NGOProfile?
+  volunteerProfile  VolunteerProfile?
+
+  notifications Notification[]
+  activityLogs  ActivityLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RestaurantProfile {
+  id                 String             @id @default(uuid())
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId             String             @unique
+  organizationName   String
+  registrationNumber String?
+  phone              String
+  address            String
+  latitude           Float?
+  longitude          Float?
+  verificationStatus VerificationStatus @default(PENDING)
+
+  donations     Donation[]
+  verifications Verification[]
+}
+
+model NGOProfile {
+  id                 String             @id @default(uuid())
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId             String             @unique
+  organizationName   String
+  registrationNumber String?
+  capacity           Int?
+  address            String
+  latitude           Float?
+  longitude          Float?
+  verificationStatus VerificationStatus @default(PENDING)
+
+  pickupRequests PickupRequest[]
+  verifications  Verification[]
+}
+
+model VolunteerProfile {
+  id                 String             @id @default(uuid())
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId             String             @unique
+  phone              String
+  address            String
+  latitude           Float?
+  longitude          Float?
+  availabilityStatus Boolean            @default(true)
+  verificationStatus VerificationStatus @default(PENDING)
+
+  assignments   VolunteerAssignment[]
+  verifications Verification[]
+}
+
+model Donation {
+  id              String            @id @default(uuid())
+  restaurant      RestaurantProfile @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  restaurantId    String
+  title           String
+  description     String?
+  category        DonationCategory
+  quantity        Float
+  unit            String
+  preparationTime DateTime?
+  expiryTime      DateTime
+  pickupDeadline  DateTime
+  pickupAddress   String
+  latitude        Float?
+  longitude       Float?
+  status          DonationStatus    @default(AVAILABLE)
+
+  images         DonationImage[]
+  pickupRequests PickupRequest[]
+  reviews        Review[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DonationImage {
+  id         String   @id @default(uuid())
+  donation   Donation @relation(fields: [donationId], references: [id], onDelete: Cascade)
+  donationId String
+  url        String
+  publicId   String
+}
+
+model PickupRequest {
+  id         String              @id @default(uuid())
+  donation   Donation            @relation(fields: [donationId], references: [id], onDelete: Cascade)
+  donationId String
+  ngo        NGOProfile          @relation(fields: [ngoId], references: [id], onDelete: Cascade)
+  ngoId      String
+  status     PickupRequestStatus @default(PENDING)
+
+  assignments VolunteerAssignment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VolunteerAssignment {
+  id              String           @id @default(uuid())
+  pickupRequest   PickupRequest    @relation(fields: [pickupRequestId], references: [id], onDelete: Cascade)
+  pickupRequestId String
+  volunteer       VolunteerProfile @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+  volunteerId     String
+  status          AssignmentStatus @default(ASSIGNED)
+  proofImageUrl   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Verification {
+  id           String  @id @default(uuid())
+  restaurantId String?
+  ngoId        String?
+  volunteerId  String?
+
+  restaurant RestaurantProfile? @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  ngo        NGOProfile?        @relation(fields: [ngoId], references: [id], onDelete: Cascade)
+  volunteer  VolunteerProfile?  @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+
+  documentUrl  String
+  status       VerificationStatus @default(PENDING)
+  verifiedById String?
+  verifiedAt   DateTime?
+}
+
+model Review {
+  id         String   @id @default(uuid())
+  donation   Donation @relation(fields: [donationId], references: [id], onDelete: Cascade)
+  donationId String
+  reviewerId String
+  revieweeId String
+  rating     Int
+  comment    String?
+
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id              String           @id @default(uuid())
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  title           String
+  message         String
+  type            NotificationType
+  relatedEntityId String?
+  isRead          Boolean          @default(false)
+
+  createdAt DateTime @default(now())
+}
+
+model ActivityLog {
+  id      String  @id @default(uuid())
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String
+  action  String
+  details String?
+
+  timestamp DateTime @default(now())
+}
