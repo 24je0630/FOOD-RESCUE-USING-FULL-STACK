@@ -3,6 +3,7 @@ const authRoutes = require('./auth.routes');
 const donationRoutes = require('./donation.routes');
 const ngoRoutes = require('./ngo.routes');
 const volunteerRoutes = require('./volunteer.routes');
+const adminRoutes = require('./admin.routes');
 const router = express.Router();
 
 router.get('/health', (req, res) => {
@@ -13,5 +14,6 @@ router.use('/auth', authRoutes);
 router.use('/donations', donationRoutes);
 router.use('/ngo', ngoRoutes);
 router.use('/volunteer', volunteerRoutes);
+router.use('/admin', adminRoutes);
 
 module.exports = router;
