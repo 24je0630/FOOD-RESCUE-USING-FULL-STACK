@@ -30,8 +30,14 @@ import MyAssignments from './pages/volunteer/MyAssignments';
 import VolunteerPickupDetails from './pages/volunteer/PickupDetails';
 const VolunteerSettings = () => <div className="p-8"><h1>Volunteer Settings</h1></div>;
 
-// Other placeholders
-const AdminDashboard = () => <div className="p-8 text-center"><h1 className="text-2xl font-bold text-indigo-600">Admin Dashboard</h1></div>;
+// Admin Pages
+import AdminDashboard from './pages/admin/AdminDashboard';
+import UserManagement from './pages/admin/UserManagement';
+import VerificationManagement from './pages/admin/VerificationManagement';
+import DonationMonitoring from './pages/admin/DonationMonitoring';
+import PickupMonitoring from './pages/admin/PickupMonitoring';
+import ActivityLogs from './pages/admin/ActivityLogs';
+const AdminSettings = () => <div className="p-8"><h1>Admin Settings</h1></div>;
 
 function App() {
   return (
@@ -94,7 +100,13 @@ function App() {
           } />
 
           {/* Admin Routes */}
-          <Route path="/admin/*" element={<ProtectedRoute allowedRoles={['ADMIN']}><DashboardLayout><AdminDashboard /></DashboardLayout></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><DashboardLayout><AdminDashboard /></DashboardLayout></ProtectedRoute>} />
+          <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['ADMIN']}><DashboardLayout><UserManagement /></DashboardLayout></ProtectedRoute>} />
+          <Route path="/admin/verifications" element={<ProtectedRoute allowedRoles={['ADMIN']}><DashboardLayout><VerificationManagement /></DashboardLayout></ProtectedRoute>} />
+          <Route path="/admin/donations" element={<ProtectedRoute allowedRoles={['ADMIN']}><DashboardLayout><DonationMonitoring /></DashboardLayout></ProtectedRoute>} />
+          <Route path="/admin/pickups" element={<ProtectedRoute allowedRoles={['ADMIN']}><DashboardLayout><PickupMonitoring /></DashboardLayout></ProtectedRoute>} />
+          <Route path="/admin/activity-logs" element={<ProtectedRoute allowedRoles={['ADMIN']}><DashboardLayout><ActivityLogs /></DashboardLayout></ProtectedRoute>} />
+          <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={['ADMIN']}><DashboardLayout><AdminSettings /></DashboardLayout></ProtectedRoute>} />
           {/* NGO Routes */}
           <Route path="/ngo" element={<ProtectedRoute allowedRoles={['NGO']}><DashboardLayout><NgoDashboard /></DashboardLayout></ProtectedRoute>} />
           <Route path="/ngo/discover" element={<ProtectedRoute allowedRoles={['NGO']}><DashboardLayout><DiscoverDonations /></DashboardLayout></ProtectedRoute>} />

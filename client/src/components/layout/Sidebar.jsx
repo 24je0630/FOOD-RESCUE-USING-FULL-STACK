@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, ListPlus, List, History, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, ListPlus, List, History, Settings, LogOut, Users, Package, Truck } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { cn } from '../../utils/cn';
 
@@ -32,6 +32,16 @@ const Sidebar = () => {
       { name: 'My Assignments', path: '/volunteer/assignments', icon: List },
       { name: 'History', path: '/volunteer/history', icon: History },
       { name: 'Settings', path: '/volunteer/settings', icon: Settings },
+    ];
+  } else if (user?.role === 'ADMIN') {
+    links = [
+      { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
+      { name: 'Users', path: '/admin/users', icon: Users },
+      { name: 'Verifications', path: '/admin/verifications', icon: ListPlus },
+      { name: 'Donations', path: '/admin/donations', icon: Package },
+      { name: 'Pickups', path: '/admin/pickups', icon: Truck },
+      { name: 'Activity Logs', path: '/admin/activity-logs', icon: History },
+      { name: 'Settings', path: '/admin/settings', icon: Settings },
     ];
   }
 

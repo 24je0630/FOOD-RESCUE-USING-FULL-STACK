@@ -139,11 +139,12 @@ const updateUserStatus = async (req, res, next) => {
 // --- RESTAURANT MANAGEMENT ---
 const getRestaurants = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, search } = req.query;
+    const { page = 1, limit = 20, search, verificationStatus } = req.query;
     const skip = (page - 1) * limit;
 
     const where = {};
     if (search) where.organizationName = { contains: search, mode: 'insensitive' };
+    if (verificationStatus) where.verificationStatus = verificationStatus;
 
     const [restaurants, total] = await Promise.all([
       prisma.restaurantProfile.findMany({
@@ -191,11 +192,12 @@ const updateRestaurantVerification = async (req, res, next) => {
 // --- NGO MANAGEMENT ---
 const getNgos = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, search } = req.query;
+    const { page = 1, limit = 20, search, verificationStatus } = req.query;
     const skip = (page - 1) * limit;
 
     const where = {};
     if (search) where.organizationName = { contains: search, mode: 'insensitive' };
+    if (verificationStatus) where.verificationStatus = verificationStatus;
 
     const [ngos, total] = await Promise.all([
       prisma.nGOProfile.findMany({
@@ -243,16 +245,20 @@ const updateNgoVerification = async (req, res, next) => {
 // --- VOLUNTEER MANAGEMENT ---
 const getVolunteers = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20 } = req.query;
+    const { page = 1, limit = 20, verificationStatus } = req.query;
     const skip = (page - 1) * limit;
+    
+    const where = {};
+    if (verificationStatus) where.verificationStatus = verificationStatus;
 
     const [volunteers, total] = await Promise.all([
       prisma.volunteerProfile.findMany({
+        where,
         skip: parseInt(skip),
         take: parseInt(limit),
         include: { user: { select: { email: true, status: true } } }
       }),
-      prisma.volunteerProfile.count()
+      prisma.volunteerProfile.count({ where })
     ]);
 
     res.json({ success: true, data: { volunteers, pagination: { total, page: parseInt(page), limit: parseInt(limit) } } });
