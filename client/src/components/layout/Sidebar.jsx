@@ -26,6 +26,13 @@ const Sidebar = () => {
       { name: 'History', path: '/ngo/history', icon: History },
       { name: 'Settings', path: '/ngo/settings', icon: Settings },
     ];
+  } else if (user?.role === 'VOLUNTEER') {
+    links = [
+      { name: 'Dashboard', path: '/volunteer', icon: LayoutDashboard },
+      { name: 'My Assignments', path: '/volunteer/assignments', icon: List },
+      { name: 'History', path: '/volunteer/history', icon: History },
+      { name: 'Settings', path: '/volunteer/settings', icon: Settings },
+    ];
   }
 
   return (

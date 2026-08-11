@@ -24,9 +24,14 @@ import NgoDonationDetails from './pages/ngo/NgoDonationDetails';
 import PickupRequests from './pages/ngo/PickupRequests';
 const NgoSettings = () => <div className="p-8"><h1>NGO Settings</h1></div>;
 
+// Volunteer Pages
+import VolunteerDashboard from './pages/volunteer/VolunteerDashboard';
+import MyAssignments from './pages/volunteer/MyAssignments';
+import VolunteerPickupDetails from './pages/volunteer/PickupDetails';
+const VolunteerSettings = () => <div className="p-8"><h1>Volunteer Settings</h1></div>;
+
 // Other placeholders
 const AdminDashboard = () => <div className="p-8 text-center"><h1 className="text-2xl font-bold text-indigo-600">Admin Dashboard</h1></div>;
-const VolunteerDashboard = () => <div className="p-8 text-center"><h1 className="text-2xl font-bold text-yellow-600">Volunteer Dashboard</h1></div>;
 
 function App() {
   return (
@@ -99,7 +104,11 @@ function App() {
           <Route path="/ngo/settings" element={<ProtectedRoute allowedRoles={['NGO']}><DashboardLayout><NgoSettings /></DashboardLayout></ProtectedRoute>} />
 
           {/* Volunteer Routes */}
-          <Route path="/volunteer/*" element={<ProtectedRoute allowedRoles={['VOLUNTEER']}><DashboardLayout><VolunteerDashboard /></DashboardLayout></ProtectedRoute>} />
+          <Route path="/volunteer" element={<ProtectedRoute allowedRoles={['VOLUNTEER']}><DashboardLayout><VolunteerDashboard /></DashboardLayout></ProtectedRoute>} />
+          <Route path="/volunteer/assignments" element={<ProtectedRoute allowedRoles={['VOLUNTEER']}><DashboardLayout><MyAssignments /></DashboardLayout></ProtectedRoute>} />
+          <Route path="/volunteer/assignments/:id" element={<ProtectedRoute allowedRoles={['VOLUNTEER']}><DashboardLayout><VolunteerPickupDetails /></DashboardLayout></ProtectedRoute>} />
+          <Route path="/volunteer/history" element={<ProtectedRoute allowedRoles={['VOLUNTEER']}><DashboardLayout><MyAssignments /></DashboardLayout></ProtectedRoute>} />
+          <Route path="/volunteer/settings" element={<ProtectedRoute allowedRoles={['VOLUNTEER']}><DashboardLayout><VolunteerSettings /></DashboardLayout></ProtectedRoute>} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
