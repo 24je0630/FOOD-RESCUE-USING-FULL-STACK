@@ -17,9 +17,15 @@ import DonationList from './pages/restaurant/DonationList';
 import DonationDetails from './pages/restaurant/DonationDetails';
 const RestaurantSettings = () => <div className="p-8"><h1>Settings</h1></div>;
 
+// NGO Pages
+import NgoDashboard from './pages/ngo/NgoDashboard';
+import DiscoverDonations from './pages/ngo/DiscoverDonations';
+import NgoDonationDetails from './pages/ngo/NgoDonationDetails';
+import PickupRequests from './pages/ngo/PickupRequests';
+const NgoSettings = () => <div className="p-8"><h1>NGO Settings</h1></div>;
+
 // Other placeholders
 const AdminDashboard = () => <div className="p-8 text-center"><h1 className="text-2xl font-bold text-indigo-600">Admin Dashboard</h1></div>;
-const NgoDashboard = () => <div className="p-8 text-center"><h1 className="text-2xl font-bold text-blue-600">NGO Dashboard</h1></div>;
 const VolunteerDashboard = () => <div className="p-8 text-center"><h1 className="text-2xl font-bold text-yellow-600">Volunteer Dashboard</h1></div>;
 
 function App() {
@@ -85,7 +91,13 @@ function App() {
           {/* Admin Routes */}
           <Route path="/admin/*" element={<ProtectedRoute allowedRoles={['ADMIN']}><DashboardLayout><AdminDashboard /></DashboardLayout></ProtectedRoute>} />
           {/* NGO Routes */}
-          <Route path="/ngo/*" element={<ProtectedRoute allowedRoles={['NGO']}><DashboardLayout><NgoDashboard /></DashboardLayout></ProtectedRoute>} />
+          <Route path="/ngo" element={<ProtectedRoute allowedRoles={['NGO']}><DashboardLayout><NgoDashboard /></DashboardLayout></ProtectedRoute>} />
+          <Route path="/ngo/discover" element={<ProtectedRoute allowedRoles={['NGO']}><DashboardLayout><DiscoverDonations /></DashboardLayout></ProtectedRoute>} />
+          <Route path="/ngo/donations/:id" element={<ProtectedRoute allowedRoles={['NGO']}><DashboardLayout><NgoDonationDetails /></DashboardLayout></ProtectedRoute>} />
+          <Route path="/ngo/requests" element={<ProtectedRoute allowedRoles={['NGO']}><DashboardLayout><PickupRequests /></DashboardLayout></ProtectedRoute>} />
+          <Route path="/ngo/history" element={<ProtectedRoute allowedRoles={['NGO']}><DashboardLayout><PickupRequests /></DashboardLayout></ProtectedRoute>} />
+          <Route path="/ngo/settings" element={<ProtectedRoute allowedRoles={['NGO']}><DashboardLayout><NgoSettings /></DashboardLayout></ProtectedRoute>} />
+
           {/* Volunteer Routes */}
           <Route path="/volunteer/*" element={<ProtectedRoute allowedRoles={['VOLUNTEER']}><DashboardLayout><VolunteerDashboard /></DashboardLayout></ProtectedRoute>} />
 

@@ -21,6 +21,10 @@ const Sidebar = () => {
   } else if (user?.role === 'NGO') {
     links = [
       { name: 'Dashboard', path: '/ngo', icon: LayoutDashboard },
+      { name: 'Discover', path: '/ngo/discover', icon: ListPlus },
+      { name: 'My Requests', path: '/ngo/requests', icon: List },
+      { name: 'History', path: '/ngo/history', icon: History },
+      { name: 'Settings', path: '/ngo/settings', icon: Settings },
     ];
   }
 
