@@ -192,10 +192,82 @@ const getImpactStats = async (req, res, next) => {
   }
 };
 
+// Accept a pickup request (Restaurant action)
+const acceptPickupRequest = async (req, res, next) => {
+  try {
+    const { requestId } = req.params;
+
+    const restaurant = await prisma.restaurantProfile.findUnique({
+      where: { userId: req.user.id },
+    });
+
+    const request = await prisma.pickupRequest.findFirst({
+      where: { id: requestId },
+      include: { donation: true }
+    });
+
+    if (!request || request.donation.restaurantId !== restaurant.id) {
+      throw createError(404, 'Pickup request not found or unauthorized');
+    }
+
+    if (request.status !== 'PENDING') {
+      throw createError(400, 'Can only accept PENDING requests');
+    }
+
+    // Find an available volunteer (simple round-robin or just first available for now)
+    const availableVolunteer = await prisma.volunteerProfile.findFirst({
+      where: { availabilityStatus: true }
+    });
+
+    if (!availableVolunteer) {
+      throw createError(400, 'No volunteers currently available. Please try again later.');
+    }
+
+    const updatedData = await prisma.$transaction(async (tx) => {
+      // 1. Mark request as ACCEPTED
+      const updatedReq = await tx.pickupRequest.update({
+        where: { id: requestId },
+        data: { status: 'ACCEPTED' }
+      });
+
+      // 2. Reject other pending requests for this donation
+      await tx.pickupRequest.updateMany({
+        where: { donationId: request.donationId, status: 'PENDING', id: { not: requestId } },
+        data: { status: 'REJECTED' }
+      });
+
+      // 3. Mark donation as ASSIGNED
+      await tx.donation.update({
+        where: { id: request.donationId },
+        data: { status: 'ASSIGNED' }
+      });
+
+      // 4. Create VolunteerAssignment
+      const assignment = await tx.volunteerAssignment.create({
+        data: {
+          pickupRequestId: requestId,
+          volunteerId: availableVolunteer.id,
+          status: 'ASSIGNED'
+        }
+      });
+
+      return { request: updatedReq, assignment };
+    });
+
+    res.json({
+      success: true,
+      data: updatedData,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createDonation,
   getMyDonations,
   getDonationById,
   updateDonation,
   getImpactStats,
+  acceptPickupRequest,
 };

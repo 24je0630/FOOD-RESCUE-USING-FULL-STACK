@@ -5,6 +5,7 @@ const {
   getDonationById,
   updateDonation,
   getImpactStats,
+  acceptPickupRequest,
 } = require('../controllers/donation.controller');
 const { requireAuth, requireRole } = require('../middlewares/auth.middleware');
 
@@ -20,5 +21,6 @@ router.get('/stats/impact', getImpactStats);
 router.get('/:id', getDonationById);
 router.put('/:id', updateDonation);
 router.patch('/:id/status', updateDonation); // Assuming status update goes through same validation
+router.post('/requests/:requestId/accept', acceptPickupRequest);
 
 module.exports = router;
