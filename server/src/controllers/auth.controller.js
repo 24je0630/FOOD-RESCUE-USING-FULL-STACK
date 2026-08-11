@@ -55,7 +55,6 @@ const register = async (req, res, next) => {
           data: {
             userId: newUser.id,
             organizationName: validatedData.organizationName,
-            phone: validatedData.phone, // Adding this might need schema update later if missing
             address: validatedData.address,
           },
         });
