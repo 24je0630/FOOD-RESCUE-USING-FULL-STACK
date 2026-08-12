@@ -7,17 +7,21 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import toast from 'react-hot-toast';
 import { Search, ShieldAlert, CheckCircle } from 'lucide-react';
+import Pagination from '../../components/common/Pagination';
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
+  const [meta, setMeta] = useState(null);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [actionLoading, setActionLoading] = useState(null);
 
   const fetchUsers = async () => {
     try {
-      const data = await adminService.getUsers({ search });
-      setUsers(data.users);
+      const response = await adminService.getUsers({ search, page });
+      setUsers(response.data.users);
+      setMeta(response.meta);
     } catch (err) {
       toast.error('Failed to load users');
     } finally {
@@ -28,10 +32,11 @@ const UserManagement = () => {
   useEffect(() => {
     fetchUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [page]);
 
   const handleSearch = (e) => {
     e.preventDefault();
+    setPage(1);
     fetchUsers();
   };
 
@@ -128,6 +133,9 @@ const UserManagement = () => {
                 )}
               </tbody>
             </table>
+          </div>
+          <div className="px-6 pb-4">
+            <Pagination meta={meta} onPageChange={setPage} />
           </div>
         </div>
       )}

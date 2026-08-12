@@ -6,6 +6,7 @@ import Loader from '../../components/ui/Loader';
 import Badge from '../../components/ui/Badge';
 import { Eye, Plus } from 'lucide-react';
 import Button from '../../components/ui/Button';
+import Pagination from '../../components/common/Pagination';
 
 const getStatusBadge = (status) => {
   switch (status) {
@@ -22,15 +23,19 @@ const getStatusBadge = (status) => {
 
 const DonationList = () => {
   const [donations, setDonations] = useState([]);
+  const [meta, setMeta] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL');
+  const [page, setPage] = useState(1);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchDonations = async () => {
+      setLoading(true);
       try {
-        const data = await donationService.getMyDonations();
-        setDonations(data);
+        const data = await donationService.getMyDonations({ page });
+        setDonations(data.data.donations || data.data || []);
+        setMeta(data.meta);
       } catch (err) {
         console.error('Failed to load donations');
       } finally {
@@ -38,7 +43,7 @@ const DonationList = () => {
       }
     };
     fetchDonations();
-  }, []);
+  }, [page]);
 
   const filteredDonations = donations.filter(d => filter === 'ALL' || d.status === filter);
 
@@ -113,6 +118,9 @@ const DonationList = () => {
               )}
             </tbody>
           </table>
+        </div>
+        <div className="px-6 pb-4">
+          <Pagination meta={meta} onPageChange={setPage} />
         </div>
       </div>
     </div>

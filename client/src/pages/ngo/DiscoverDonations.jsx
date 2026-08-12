@@ -14,14 +14,17 @@ import LocationMarker, { ICONS } from '../../components/maps/LocationMarker';
 import { getUserLocation, isValidCoordinate, formatDistance } from '../../components/maps/mapUtils';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import Pagination from '../../components/common/Pagination';
 
 const CATEGORIES = ['ALL', 'PRODUCE', 'BAKED_GOODS', 'PREPARED_MEALS', 'DAIRY', 'MEAT', 'BEVERAGES', 'OTHER'];
 
 const DiscoverDonations = () => {
   const { user } = useAuth();
   const [donations, setDonations] = useState([]);
+  const [meta, setMeta] = useState(null);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'map'
+  const [page, setPage] = useState(1);
   
   // Filters
   const [search, setSearch] = useState('');
@@ -57,9 +60,11 @@ const DiscoverDonations = () => {
         filters.lng = currentLoc.lng;
         filters.radius = radius;
       }
+      filters.page = page;
 
       const data = await ngoService.discoverDonations(filters);
-      setDonations(data.donations || []);
+      setDonations(data.data.donations || []);
+      setMeta(data.meta);
     } catch (error) {
       console.error('Failed to load donations', error);
       toast.error('Failed to load donations');
@@ -71,10 +76,11 @@ const DiscoverDonations = () => {
   useEffect(() => {
     fetchDonations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, radius, location]); 
+  }, [category, radius, location, page]); 
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
+    setPage(1);
     fetchDonations();
   };
 
@@ -220,6 +226,9 @@ const DiscoverDonations = () => {
               No available donations found matching your criteria.
             </div>
           )}
+          <div className="col-span-full">
+            <Pagination meta={meta} onPageChange={setPage} />
+          </div>
         </div>
       ) : (
         <div className="w-full rounded-xl overflow-hidden border border-gray-200 shadow-sm relative">

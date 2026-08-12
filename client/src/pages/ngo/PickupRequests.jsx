@@ -6,6 +6,7 @@ import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import toast from 'react-hot-toast';
 import { MapPin, Truck } from 'lucide-react';
+import Pagination from '../../components/common/Pagination';
 
 const getStatusBadge = (status) => {
   switch (status) {
@@ -20,31 +21,34 @@ const getStatusBadge = (status) => {
 
 const PickupRequests = () => {
   const [requests, setRequests] = useState([]);
+  const [meta, setMeta] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL');
-
-  const fetchRequests = async () => {
-    try {
-      const data = await ngoService.getMyRequests();
-      setRequests(data.requests || []);
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to load requests');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
+    const fetchRequests = async () => {
+      setLoading(true);
+      try {
+        const data = await ngoService.getMyRequests({ page });
+        setRequests(data.data.requests || data.data || []);
+        setMeta(data.meta);
+      } catch (err) {
+        console.error(err);
+        toast.error('Failed to load requests');
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchRequests();
-  }, []);
+  }, [page]);
 
   const handleCancel = async (id) => {
     if (window.confirm('Are you sure you want to cancel this request?')) {
       try {
         await ngoService.cancelRequest(id);
         toast.success('Request cancelled');
-        fetchRequests();
+        setPage(1);
       } catch (err) {
         toast.error(err.response?.data?.message || 'Failed to cancel request');
       }
@@ -117,6 +121,9 @@ const PickupRequests = () => {
             No requests found matching this filter.
           </div>
         )}
+        <div className="col-span-1 pb-4">
+          <Pagination meta={meta} onPageChange={setPage} />
+        </div>
       </div>
     </div>
   );

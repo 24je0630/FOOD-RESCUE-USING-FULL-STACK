@@ -5,17 +5,17 @@ const notificationService = {
     const response = await api.get('/notifications/my', {
       params: { page, limit, unreadOnly }
     });
-    return response.data.data;
+    return response.data.meta ? { data: response.data.data, meta: response.data.meta } : response.data.data;
   },
 
   markAsRead: async (id) => {
     const response = await api.patch(`/notifications/${id}/read`);
-    return response.data.data;
+    return response.data.meta ? { data: response.data.data, meta: response.data.meta } : response.data.data;
   },
 
   markAllAsRead: async () => {
     const response = await api.patch('/notifications/mark-all-read');
-    return response.data.data;
+    return response.data.meta ? { data: response.data.data, meta: response.data.meta } : response.data.data;
   }
 };
 

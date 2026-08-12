@@ -3,6 +3,7 @@ const prisma = require('../config/prisma');
 const createError = require('http-errors');
 const { sendNotification, sendNotificationToRole } = require('../services/notification.service');
 const { uploadImage } = require('../services/cloudinary.service');
+const { getPaginationParams, formatPaginatedResponse } = require('../utils/pagination');
 
 const createDonationSchema = z.object({
   title: z.string().min(3),
@@ -66,6 +67,7 @@ const createDonation = async (req, res, next) => {
 // Get all donations for the logged-in restaurant
 const getMyDonations = async (req, res, next) => {
   try {
+    const { page, limit, skip, take } = getPaginationParams(req.query);
     const restaurant = await prisma.restaurantProfile.findUnique({
       where: { userId: req.user.id },
     });
@@ -74,20 +76,25 @@ const getMyDonations = async (req, res, next) => {
       throw createError(404, 'Restaurant profile not found');
     }
 
-    const donations = await prisma.donation.findMany({
-      where: { restaurantId: restaurant.id },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        images: true,
-        pickupRequests: {
-          include: { ngo: true },
+    const [donations, total] = await Promise.all([
+      prisma.donation.findMany({
+        where: { restaurantId: restaurant.id },
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          images: true,
+          pickupRequests: {
+            include: { ngo: true },
+          },
         },
-      },
-    });
+      }),
+      prisma.donation.count({ where: { restaurantId: restaurant.id } })
+    ]);
 
     res.json({
       success: true,
-      data: { donations },
+      ...formatPaginatedResponse({ donations }, total, page, limit),
     });
   } catch (error) {
     next(error);

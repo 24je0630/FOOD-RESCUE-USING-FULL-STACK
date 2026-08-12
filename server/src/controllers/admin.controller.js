@@ -2,6 +2,7 @@ const { z } = require('zod');
 const prisma = require('../config/prisma');
 const createError = require('http-errors');
 const { sendNotification } = require('../services/notification.service');
+const { getPaginationParams, formatPaginatedResponse } = require('../utils/pagination');
 
 // Helper to log admin actions
 const logAdminAction = async (adminId, action, details) => {
@@ -62,8 +63,8 @@ const getDashboardStats = async (req, res, next) => {
 // --- USER MANAGEMENT ---
 const getUsers = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, role, status, search } = req.query;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip, take } = getPaginationParams(req.query);
+    const { role, status, search } = req.query;
 
     const where = {};
     if (role) where.role = role;
@@ -81,7 +82,7 @@ const getUsers = async (req, res, next) => {
       prisma.user.count({ where })
     ]);
 
-    res.json({ success: true, data: { users, pagination: { total, page: parseInt(page), limit: parseInt(limit) } } });
+    res.json({ success: true, ...formatPaginatedResponse({ users }, total, page, limit) });
   } catch (error) {
     next(error);
   }
@@ -139,8 +140,8 @@ const updateUserStatus = async (req, res, next) => {
 // --- RESTAURANT MANAGEMENT ---
 const getRestaurants = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, search, verificationStatus } = req.query;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip, take } = getPaginationParams(req.query);
+    const { search, verificationStatus } = req.query;
 
     const where = {};
     if (search) where.organizationName = { contains: search, mode: 'insensitive' };
@@ -156,7 +157,7 @@ const getRestaurants = async (req, res, next) => {
       prisma.restaurantProfile.count({ where })
     ]);
 
-    res.json({ success: true, data: { restaurants, pagination: { total, page: parseInt(page), limit: parseInt(limit) } } });
+    res.json({ success: true, ...formatPaginatedResponse({ restaurants }, total, page, limit) });
   } catch (error) {
     next(error);
   }
@@ -192,8 +193,8 @@ const updateRestaurantVerification = async (req, res, next) => {
 // --- NGO MANAGEMENT ---
 const getNgos = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, search, verificationStatus } = req.query;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip, take } = getPaginationParams(req.query);
+    const { search, verificationStatus } = req.query;
 
     const where = {};
     if (search) where.organizationName = { contains: search, mode: 'insensitive' };
@@ -209,7 +210,7 @@ const getNgos = async (req, res, next) => {
       prisma.nGOProfile.count({ where })
     ]);
 
-    res.json({ success: true, data: { ngos, pagination: { total, page: parseInt(page), limit: parseInt(limit) } } });
+    res.json({ success: true, ...formatPaginatedResponse({ ngos }, total, page, limit) });
   } catch (error) {
     next(error);
   }
@@ -245,8 +246,8 @@ const updateNgoVerification = async (req, res, next) => {
 // --- VOLUNTEER MANAGEMENT ---
 const getVolunteers = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, verificationStatus } = req.query;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip, take } = getPaginationParams(req.query);
+    const { verificationStatus } = req.query;
     
     const where = {};
     if (verificationStatus) where.verificationStatus = verificationStatus;
@@ -261,7 +262,7 @@ const getVolunteers = async (req, res, next) => {
       prisma.volunteerProfile.count({ where })
     ]);
 
-    res.json({ success: true, data: { volunteers, pagination: { total, page: parseInt(page), limit: parseInt(limit) } } });
+    res.json({ success: true, ...formatPaginatedResponse({ volunteers }, total, page, limit) });
   } catch (error) {
     next(error);
   }
@@ -297,8 +298,8 @@ const updateVolunteerVerification = async (req, res, next) => {
 // --- DONATION MONITORING ---
 const getDonations = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, status, category } = req.query;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip, take } = getPaginationParams(req.query);
+    const { status, category } = req.query;
 
     const where = {};
     if (status) where.status = status;
@@ -315,7 +316,7 @@ const getDonations = async (req, res, next) => {
       prisma.donation.count({ where })
     ]);
 
-    res.json({ success: true, data: { donations, pagination: { total, page: parseInt(page), limit: parseInt(limit) } } });
+    res.json({ success: true, ...formatPaginatedResponse({ donations }, total, page, limit) });
   } catch (error) {
     next(error);
   }
@@ -324,8 +325,8 @@ const getDonations = async (req, res, next) => {
 // --- PICKUP MONITORING ---
 const getPickups = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, status } = req.query;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip, take } = getPaginationParams(req.query);
+    const { status } = req.query;
 
     const where = {};
     if (status) where.status = status;
@@ -345,7 +346,7 @@ const getPickups = async (req, res, next) => {
       prisma.pickupRequest.count({ where })
     ]);
 
-    res.json({ success: true, data: { pickups, pagination: { total, page: parseInt(page), limit: parseInt(limit) } } });
+    res.json({ success: true, ...formatPaginatedResponse({ pickups }, total, page, limit) });
   } catch (error) {
     next(error);
   }
@@ -354,8 +355,7 @@ const getPickups = async (req, res, next) => {
 // --- ACTIVITY LOGS ---
 const getActivityLogs = async (req, res, next) => {
   try {
-    const { page = 1, limit = 50 } = req.query;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip, take } = getPaginationParams(req.query, 50, 200);
 
     const [logs, total] = await Promise.all([
       prisma.activityLog.findMany({
@@ -367,7 +367,7 @@ const getActivityLogs = async (req, res, next) => {
       prisma.activityLog.count()
     ]);
 
-    res.json({ success: true, data: { logs, pagination: { total, page: parseInt(page), limit: parseInt(limit) } } });
+    res.json({ success: true, ...formatPaginatedResponse({ logs }, total, page, limit) });
   } catch (error) {
     next(error);
   }

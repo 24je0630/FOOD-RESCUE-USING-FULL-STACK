@@ -1,11 +1,12 @@
 const prisma = require('../config/prisma');
 const createError = require('http-errors');
+const { getPaginationParams, formatPaginatedResponse } = require('../utils/pagination');
 
 // Get user notifications
 const getMyNotifications = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, unreadOnly } = req.query;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip, take } = getPaginationParams(req.query);
+    const { unreadOnly } = req.query;
 
     const where = { userId: req.user.id };
     if (unreadOnly === 'true') {
@@ -15,8 +16,8 @@ const getMyNotifications = async (req, res, next) => {
     const [notifications, total] = await Promise.all([
       prisma.notification.findMany({
         where,
-        skip: parseInt(skip),
-        take: parseInt(limit),
+        skip,
+        take,
         orderBy: { createdAt: 'desc' },
       }),
       prisma.notification.count({ where })
@@ -28,11 +29,7 @@ const getMyNotifications = async (req, res, next) => {
 
     res.json({
       success: true,
-      data: {
-        notifications,
-        unreadCount,
-        pagination: { total, page: parseInt(page), limit: parseInt(limit) }
-      }
+      ...formatPaginatedResponse({ notifications, unreadCount }, total, page, limit)
     });
   } catch (error) {
     next(error);

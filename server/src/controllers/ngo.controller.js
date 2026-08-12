@@ -2,6 +2,7 @@ const { z } = require('zod');
 const prisma = require('../config/prisma');
 const createError = require('http-errors');
 const { sendNotification } = require('../services/notification.service');
+const { getPaginationParams, formatPaginatedResponse } = require('../utils/pagination');
 
 // Schema for filtering and discovering donations
 const discoverQuerySchema = z.object({
@@ -16,6 +17,7 @@ const discoverQuerySchema = z.object({
 const discoverDonations = async (req, res, next) => {
   try {
     const query = discoverQuerySchema.parse(req.query);
+    const { page, limit, skip, take } = getPaginationParams(req.query);
     
     // Base filter: only AVAILABLE donations
     let whereClause = { status: 'AVAILABLE' };
@@ -31,6 +33,10 @@ const discoverDonations = async (req, res, next) => {
       ];
     }
 
+    // If geographic filtering is requested, we must fetch matching records and filter in memory
+    // (Prisma does not natively support Haversine without raw queries or PostGIS)
+    const isGeoFiltering = query.lat && query.lng && query.radius;
+
     const donations = await prisma.donation.findMany({
       where: whereClause,
       include: {
@@ -38,8 +44,12 @@ const discoverDonations = async (req, res, next) => {
           select: { organizationName: true, address: true, latitude: true, longitude: true }
         }
       },
-      orderBy: { expiryTime: 'asc' }
+      orderBy: { expiryTime: 'asc' },
+      // Only apply DB pagination if not geo-filtering
+      ...(isGeoFiltering ? {} : { skip, take })
     });
+
+    const totalDb = isGeoFiltering ? 0 : await prisma.donation.count({ where: whereClause });
 
     // If lat/lng and radius are provided, perform Haversine distance filtering
     let filteredDonations = donations;
@@ -68,11 +78,20 @@ const discoverDonations = async (req, res, next) => {
 
       // Sort by closest distance
       filteredDonations.sort((a, b) => a.distanceKm - b.distanceKm);
+      
+      // In-memory pagination for geographic results
+      const totalGeo = filteredDonations.length;
+      const paginatedGeo = filteredDonations.slice(skip, skip + take);
+
+      return res.json({
+        success: true,
+        ...formatPaginatedResponse({ donations: paginatedGeo }, totalGeo, page, limit),
+      });
     }
 
     res.json({
       success: true,
-      data: { donations: filteredDonations },
+      ...formatPaginatedResponse({ donations }, totalDb, page, limit),
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -160,26 +179,32 @@ const requestPickup = async (req, res, next) => {
 // Get NGO's pickup requests
 const getMyRequests = async (req, res, next) => {
   try {
+    const { page, limit, skip, take } = getPaginationParams(req.query);
     const ngo = await prisma.nGOProfile.findUnique({
       where: { userId: req.user.id },
     });
 
-    const requests = await prisma.pickupRequest.findMany({
-      where: { ngoId: ngo.id },
-      include: {
-        donation: {
-          include: { restaurant: { select: { organizationName: true, address: true } } }
+    const [requests, total] = await Promise.all([
+      prisma.pickupRequest.findMany({
+        where: { ngoId: ngo.id },
+        skip,
+        take,
+        include: {
+          donation: {
+            include: { restaurant: { select: { organizationName: true, address: true } } }
+          },
+          assignments: {
+            include: { volunteer: { select: { phone: true, user: { select: { email: true } } } } }
+          }
         },
-        assignments: {
-          include: { volunteer: { select: { phone: true, user: { select: { email: true } } } } }
-        }
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.pickupRequest.count({ where: { ngoId: ngo.id } })
+    ]);
 
     res.json({
       success: true,
-      data: { requests },
+      ...formatPaginatedResponse({ requests }, total, page, limit),
     });
   } catch (error) {
     next(error);

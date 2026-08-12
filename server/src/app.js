@@ -19,8 +19,10 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 // Logging
 app.use(morgan('dev'));
 
+const { apiLimiter } = require('./config/rateLimit');
+
 // API Routes
-app.use('/api', routes);
+app.use('/api', apiLimiter, routes);
 
 // Health Check Endpoint
 app.get('/health', (req, res) => {

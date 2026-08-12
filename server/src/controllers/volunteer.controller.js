@@ -3,6 +3,7 @@ const prisma = require('../config/prisma');
 const createError = require('http-errors');
 const { sendNotification } = require('../services/notification.service');
 const { uploadImage, deleteImage } = require('../services/cloudinary.service');
+const { getPaginationParams, formatPaginatedResponse } = require('../utils/pagination');
 
 // Toggle volunteer availability
 const toggleAvailability = async (req, res, next) => {
@@ -30,30 +31,36 @@ const toggleAvailability = async (req, res, next) => {
 // Get my assignments
 const getMyAssignments = async (req, res, next) => {
   try {
+    const { page, limit, skip, take } = getPaginationParams(req.query);
     const volunteer = await prisma.volunteerProfile.findUnique({
       where: { userId: req.user.id },
     });
 
-    const assignments = await prisma.volunteerAssignment.findMany({
-      where: { volunteerId: volunteer.id },
-      include: {
-        pickupRequest: {
-          include: {
-            donation: {
-              include: {
-                restaurant: { select: { organizationName: true, address: true, phone: true } }
-              }
-            },
-            ngo: { select: { organizationName: true, address: true, phone: true } }
+    const [assignments, total] = await Promise.all([
+      prisma.volunteerAssignment.findMany({
+        where: { volunteerId: volunteer.id },
+        skip,
+        take,
+        include: {
+          pickupRequest: {
+            include: {
+              donation: {
+                include: {
+                  restaurant: { select: { organizationName: true, address: true, phone: true } }
+                }
+              },
+              ngo: { select: { organizationName: true, address: true, phone: true } }
+            }
           }
-        }
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.volunteerAssignment.count({ where: { volunteerId: volunteer.id } })
+    ]);
 
     res.json({
       success: true,
-      data: { assignments },
+      ...formatPaginatedResponse({ assignments }, total, page, limit),
     });
   } catch (error) {
     next(error);

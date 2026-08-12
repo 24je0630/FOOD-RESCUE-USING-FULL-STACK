@@ -7,6 +7,7 @@ import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import toast from 'react-hot-toast';
 import { MapPin, Eye } from 'lucide-react';
+import Pagination from '../../components/common/Pagination';
 
 const getStatusBadge = (status) => {
   switch (status) {
@@ -23,15 +24,19 @@ const getStatusBadge = (status) => {
 
 const MyAssignments = () => {
   const [assignments, setAssignments] = useState([]);
+  const [meta, setMeta] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL');
+  const [page, setPage] = useState(1);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchAssignments = async () => {
+      setLoading(true);
       try {
-        const data = await volunteerService.getMyAssignments();
-        setAssignments(data.assignments || []);
+        const data = await volunteerService.getMyAssignments({ page });
+        setAssignments(data.data.assignments || data.data || []);
+        setMeta(data.meta);
       } catch (err) {
         toast.error('Failed to load assignments');
       } finally {
@@ -39,7 +44,7 @@ const MyAssignments = () => {
       }
     };
     fetchAssignments();
-  }, []);
+  }, [page]);
 
   const filteredAssignments = assignments.filter(a => filter === 'ALL' || a.status === filter);
 
@@ -118,6 +123,9 @@ const MyAssignments = () => {
             No assignments found matching this filter.
           </div>
         )}
+        <div className="col-span-1 pb-4">
+          <Pagination meta={meta} onPageChange={setPage} />
+        </div>
       </div>
     </div>
   );

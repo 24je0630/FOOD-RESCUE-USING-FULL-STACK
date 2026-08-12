@@ -8,15 +8,15 @@ const volunteerService = {
   },
 
   // Get my assignments
-  getMyAssignments: async () => {
-    const response = await api.get('/volunteer/assignments/my');
-    return response.data.data;
+  getMyAssignments: async (params = {}) => {
+    const response = await api.get('/volunteer/assignments/my', { params });
+    return response.data.meta ? { data: response.data.data, meta: response.data.meta } : response.data.data;
   },
 
   // Update assignment status (accept, pickup, collect, deliver)
   updateAssignmentStatus: async (assignmentId, status) => {
     const response = await api.patch(`/volunteer/assignments/${assignmentId}/status`, { status });
-    return response.data.data;
+    return response.data.meta ? { data: response.data.data, meta: response.data.meta } : response.data.data;
   },
 
   // Upload proof
@@ -29,13 +29,13 @@ const volunteerService = {
         'Content-Type': 'multipart/form-data',
       },
     });
-    return response.data.data;
+    return response.data.meta ? { data: response.data.data, meta: response.data.meta } : response.data.data;
   },
   
   // Get impact stats
   getImpactStats: async () => {
     const response = await api.get('/volunteer/stats/impact');
-    return response.data.data;
+    return response.data.meta ? { data: response.data.data, meta: response.data.meta } : response.data.data;
   }
 };
 
