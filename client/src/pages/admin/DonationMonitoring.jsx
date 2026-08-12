@@ -32,6 +32,7 @@ const DonationMonitoring = () => {
       const data = await adminService.getDonations(filters);
       setDonations(data.donations);
     } catch (err) {
+      console.error(err);
       toast.error('Failed to load donations');
     } finally {
       setLoading(false);

@@ -24,6 +24,7 @@ const VerificationManagement = () => {
       setNgos(ngoRes.ngos);
       setVolunteers(volRes.volunteers);
     } catch (err) {
+      console.error(err);
       toast.error('Failed to load pending verifications');
     } finally {
       setLoading(false);
@@ -43,6 +44,7 @@ const VerificationManagement = () => {
         toast.success(`${type} verification ${status.toLowerCase()}`);
         fetchPending();
       } catch (err) {
+        console.error(err);
         toast.error(`Failed to update ${type} verification`);
       }
     }

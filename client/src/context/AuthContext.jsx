@@ -32,9 +32,10 @@ export const AuthProvider = ({ children }) => {
 
   // Initialize Socket.io whenever token changes
   useEffect(() => {
+    let newSocket = null;
     if (token) {
       const socketUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
-      const newSocket = io(socketUrl, {
+      newSocket = io(socketUrl, {
         auth: { token },
       });
 
@@ -42,16 +43,15 @@ export const AuthProvider = ({ children }) => {
       newSocket.on('connect_error', (err) => console.error('Socket error:', err.message));
 
       setSocket(newSocket);
-
-      return () => {
-        newSocket.disconnect();
-      };
     } else {
-      if (socket) {
-        socket.disconnect();
-        setSocket(null);
-      }
+      setSocket(null);
     }
+
+    return () => {
+      if (newSocket) {
+        newSocket.disconnect();
+      }
+    };
   }, [token]);
 
   const login = async (email, password) => {

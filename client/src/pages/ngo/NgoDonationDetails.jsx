@@ -4,7 +4,6 @@ import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import ngoService from '../../services/ngoService';
 import Loader from '../../components/ui/Loader';
-import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import toast from 'react-hot-toast';
 import { MapPin, Clock, Info } from 'lucide-react';

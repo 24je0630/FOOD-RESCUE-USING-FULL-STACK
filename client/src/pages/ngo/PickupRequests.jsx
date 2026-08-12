@@ -28,6 +28,7 @@ const PickupRequests = () => {
       const data = await ngoService.getMyRequests();
       setRequests(data.requests || []);
     } catch (err) {
+      console.error(err);
       toast.error('Failed to load requests');
     } finally {
       setLoading(false);

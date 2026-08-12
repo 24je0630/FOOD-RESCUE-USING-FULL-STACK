@@ -2,9 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
 import adminService from '../../services/adminService';
 import Loader from '../../components/ui/Loader';
-import { Users, Building2, HeartHandshake, Package, AlertTriangle, Truck } from 'lucide-react';
+import { Users, HeartHandshake, Package, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
-import Badge from '../../components/ui/Badge';
 
 const StatCard = ({ title, value, icon: Icon, colorClass }) => (
   <Card>
@@ -30,7 +29,7 @@ const AdminDashboard = () => {
         const stats = await adminService.getDashboardStats();
         setData(stats);
       } catch (err) {
-        console.error('Failed to load admin dashboard');
+        console.error('Failed to load admin dashboard', err);
       } finally {
         setLoading(false);
       }

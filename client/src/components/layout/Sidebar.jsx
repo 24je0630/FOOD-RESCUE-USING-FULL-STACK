@@ -40,6 +40,7 @@ const Sidebar = () => {
       { name: 'Verifications', path: '/admin/verifications', icon: ListPlus },
       { name: 'Donations', path: '/admin/donations', icon: Package },
       { name: 'Pickups', path: '/admin/pickups', icon: Truck },
+      { name: 'Reports', path: '/admin/reports', icon: ListPlus },
       { name: 'Activity Logs', path: '/admin/activity-logs', icon: History },
       { name: 'Settings', path: '/admin/settings', icon: Settings },
     ];

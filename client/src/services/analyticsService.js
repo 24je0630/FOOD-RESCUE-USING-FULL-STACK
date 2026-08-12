@@ -21,6 +21,13 @@ const analyticsService = {
     if (to) params.to = to;
     const response = await api.get('/analytics/volunteer', { params });
     return response.data.data;
+  },
+  getGlobalAnalytics: async (from, to) => {
+    const params = {};
+    if (from) params.from = from;
+    if (to) params.to = to;
+    const response = await api.get('/analytics/global', { params });
+    return response.data.data;
   }
 };
 

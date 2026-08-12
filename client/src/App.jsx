@@ -37,6 +37,7 @@ import VerificationManagement from './pages/admin/VerificationManagement';
 import DonationMonitoring from './pages/admin/DonationMonitoring';
 import PickupMonitoring from './pages/admin/PickupMonitoring';
 import ActivityLogs from './pages/admin/ActivityLogs';
+import AdminReports from './pages/admin/AdminReports';
 const AdminSettings = () => <div className="p-8"><h1>Admin Settings</h1></div>;
 
 function App() {
@@ -105,6 +106,7 @@ function App() {
           <Route path="/admin/verifications" element={<ProtectedRoute allowedRoles={['ADMIN']}><DashboardLayout><VerificationManagement /></DashboardLayout></ProtectedRoute>} />
           <Route path="/admin/donations" element={<ProtectedRoute allowedRoles={['ADMIN']}><DashboardLayout><DonationMonitoring /></DashboardLayout></ProtectedRoute>} />
           <Route path="/admin/pickups" element={<ProtectedRoute allowedRoles={['ADMIN']}><DashboardLayout><PickupMonitoring /></DashboardLayout></ProtectedRoute>} />
+          <Route path="/admin/reports" element={<ProtectedRoute allowedRoles={['ADMIN']}><DashboardLayout><AdminReports /></DashboardLayout></ProtectedRoute>} />
           <Route path="/admin/activity-logs" element={<ProtectedRoute allowedRoles={['ADMIN']}><DashboardLayout><ActivityLogs /></DashboardLayout></ProtectedRoute>} />
           <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={['ADMIN']}><DashboardLayout><AdminSettings /></DashboardLayout></ProtectedRoute>} />
           {/* NGO Routes */}

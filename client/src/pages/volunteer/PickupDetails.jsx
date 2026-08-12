@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/Card';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import volunteerService from '../../services/volunteerService';
 import Loader from '../../components/ui/Loader';
 import Badge from '../../components/ui/Badge';
@@ -32,6 +31,7 @@ const VolunteerPickupDetails = () => {
         navigate('/volunteer/assignments');
       }
     } catch (err) {
+      console.error(err);
       toast.error('Failed to load assignment details');
     } finally {
       setLoading(false);

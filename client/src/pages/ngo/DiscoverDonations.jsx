@@ -11,7 +11,7 @@ import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import Button from '../../components/ui/Button';
 import { Card, CardContent } from '../../components/ui/Card';
-import { Search, MapPin, List, Eye } from 'lucide-react';
+import { Search, MapPin, List } from 'lucide-react';
 
 // Fix for default leaflet icons in React
 delete L.Icon.Default.prototype._getIconUrl;
@@ -32,8 +32,8 @@ const DiscoverDonations = () => {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('ALL');
   // Mocking NGO location for distance filter demonstration
-  const [lat, setLat] = useState('40.7128');
-  const [lng, setLng] = useState('-74.0060');
+  const [lat, _setLat] = useState('40.7128');
+  const [lng, _setLng] = useState('-74.0060');
 
   const navigate = useNavigate();
 

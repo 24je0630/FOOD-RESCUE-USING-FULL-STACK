@@ -7,7 +7,7 @@ import Loader from '../../components/ui/Loader';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import toast from 'react-hot-toast';
-import { MapPin, Clock, Info, CheckCircle, XCircle } from 'lucide-react';
+import { MapPin, Clock, Info, CheckCircle } from 'lucide-react';
 
 const DonationDetails = () => {
   const { id } = useParams();
@@ -21,6 +21,7 @@ const DonationDetails = () => {
       const data = await donationService.getDonationById(id);
       setDonation(data);
     } catch (err) {
+      console.error(err);
       toast.error('Failed to load donation details');
       navigate('/restaurant/donations');
     } finally {
