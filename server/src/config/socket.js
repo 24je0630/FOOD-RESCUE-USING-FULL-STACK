@@ -7,7 +7,7 @@ let io;
 const initSocket = (server) => {
   io = socketIo(server, {
     cors: {
-      origin: '*', // For development. Should be restricted in production
+      origin: env.CLIENT_URL || '*',
       methods: ['GET', 'POST']
     }
   });
