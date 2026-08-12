@@ -40,7 +40,7 @@ const register = async (req, res, next) => {
           role: validatedData.role,
         },
       });
-
+      console.log('NEW USER IS:', newUser);
       if (validatedData.role === 'RESTAURANT') {
         await tx.restaurantProfile.create({
           data: {
@@ -85,7 +85,7 @@ const register = async (req, res, next) => {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return next(createError(400, error.errors[0].message));
+      return next(createError(400, error.errors?.[0]?.message || 'Validation error'));
     }
     next(error);
   }
@@ -127,7 +127,7 @@ const login = async (req, res, next) => {
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return next(createError(400, error.errors[0].message));
+      return next(createError(400, error.errors?.[0]?.message || 'Validation error'));
     }
     next(error);
   }
