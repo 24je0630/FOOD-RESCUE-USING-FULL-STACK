@@ -7,7 +7,7 @@ import Loader from '../../components/ui/Loader';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import toast from 'react-hot-toast';
-import { MapPin, Clock, Info, CheckCircle } from 'lucide-react';
+import { MapPin, Clock, Info, CheckCircle, Image as ImageIcon } from 'lucide-react';
 import MapView from '../../components/maps/MapView';
 import LocationMarker from '../../components/maps/LocationMarker';
 import { isValidCoordinate } from '../../components/maps/mapUtils';
@@ -105,6 +105,32 @@ const DonationDetails = () => {
                 <span className="block text-gray-500 text-sm">Description</span>
                 <p className="mt-1 text-gray-700">{donation.description || 'No description provided.'}</p>
               </div>
+
+              {/* Image Gallery */}
+              {donation.images && donation.images.length > 0 && (
+                <div className="pt-4 border-t border-gray-100">
+                  <span className="block text-gray-500 text-sm mb-3">Images</span>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {donation.images.map(img => (
+                      <div key={img.id} className="relative rounded-lg overflow-hidden border border-gray-200 aspect-square bg-gray-50">
+                        <img 
+                          src={img.url} 
+                          alt="Donation" 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                        <div className="hidden absolute inset-0 items-center justify-center text-gray-400 bg-gray-50 flex-col">
+                          <ImageIcon className="h-8 w-8 mb-2" />
+                          <span className="text-xs">Image unavailable</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 

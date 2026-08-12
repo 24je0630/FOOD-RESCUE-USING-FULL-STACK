@@ -12,6 +12,7 @@ import { MapPin, Phone, User, CheckCircle, Truck, Package, Camera, Upload } from
 import MapView from '../../components/maps/MapView';
 import LocationMarker, { ICONS } from '../../components/maps/LocationMarker';
 import { isValidCoordinate } from '../../components/maps/mapUtils';
+import ImageUploader from '../../components/common/ImageUploader';
 
 const VolunteerPickupDetails = () => {
   const { id } = useParams();
@@ -19,7 +20,7 @@ const VolunteerPickupDetails = () => {
   const [assignment, setAssignment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  const [proofUrl, setProofUrl] = useState('');
+  const [proofFile, setProofFile] = useState(null);
   const [showProofUpload, setShowProofUpload] = useState(false);
 
   const fetchAssignment = async () => {
@@ -61,10 +62,10 @@ const VolunteerPickupDetails = () => {
 
   const handleProofUpload = async (e) => {
     e.preventDefault();
-    if (!proofUrl) return toast.error('Please enter a proof image URL');
+    if (!proofFile) return toast.error('Please select a proof image');
     try {
       setActionLoading(true);
-      await volunteerService.uploadProof(id, proofUrl);
+      await volunteerService.uploadProof(id, proofFile);
       toast.success('Proof uploaded successfully');
       setShowProofUpload(false);
       fetchAssignment();
@@ -171,15 +172,15 @@ const VolunteerPickupDetails = () => {
            </CardContent>
            {showProofUpload && (
              <div className="px-4 pb-4 border-t border-emerald-200 mt-2 pt-4">
-                <form onSubmit={handleProofUpload} className="flex space-x-4">
-                  <div className="flex-1">
-                    <Input 
-                      placeholder="Enter image URL (Cloudinary simulation)" 
-                      value={proofUrl} 
-                      onChange={e => setProofUrl(e.target.value)} 
-                    />
+                <form onSubmit={handleProofUpload} className="flex flex-col space-y-4">
+                  <ImageUploader 
+                    onImageSelect={setProofFile}
+                    onImageClear={() => setProofFile(null)}
+                    isUploading={actionLoading}
+                  />
+                  <div className="flex justify-end">
+                    <Button type="submit" isLoading={actionLoading} disabled={!proofFile}>Submit Proof</Button>
                   </div>
-                  <Button type="submit" isLoading={actionLoading}>Submit Proof</Button>
                 </form>
              </div>
            )}

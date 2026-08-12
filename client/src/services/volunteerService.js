@@ -20,8 +20,15 @@ const volunteerService = {
   },
 
   // Upload proof
-  uploadProof: async (assignmentId, proofImageUrl) => {
-    const response = await api.post(`/volunteer/assignments/${assignmentId}/proof`, { proofImageUrl });
+  uploadProof: async (assignmentId, file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    const response = await api.post(`/volunteer/assignments/${assignmentId}/proof`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data.data;
   },
   

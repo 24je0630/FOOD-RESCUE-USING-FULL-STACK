@@ -2,6 +2,7 @@ const { z } = require('zod');
 const prisma = require('../config/prisma');
 const createError = require('http-errors');
 const { sendNotification } = require('../services/notification.service');
+const { uploadImage, deleteImage } = require('../services/cloudinary.service');
 
 // Toggle volunteer availability
 const toggleAvailability = async (req, res, next) => {
@@ -180,7 +181,10 @@ const updateAssignmentStatus = async (req, res, next) => {
 const uploadProof = async (req, res, next) => {
     try {
         const { assignmentId } = req.params;
-        const { proofImageUrl } = z.object({ proofImageUrl: z.string().url() }).parse(req.body);
+        
+        if (!req.file) {
+          throw createError(400, 'No image file provided');
+        }
     
         const volunteer = await prisma.volunteerProfile.findUnique({
           where: { userId: req.user.id },
@@ -197,20 +201,30 @@ const uploadProof = async (req, res, next) => {
         if (assignment.status !== 'DELIVERED' && assignment.status !== 'FOOD_COLLECTED') {
           throw createError(400, 'Proof can only be uploaded when food is collected or delivered');
         }
-    
-        const updated = await prisma.volunteerAssignment.update({
-            where: { id: assignment.id },
-            data: { proofImageUrl }
-        });
-    
-        res.json({
-          success: true,
-          data: { assignment: updated },
-        });
-      } catch (error) {
-        if (error instanceof z.ZodError) {
-            return next(createError(400, error.errors[0].message));
+
+        // Upload to Cloudinary
+        let cloudinaryResult;
+        try {
+          cloudinaryResult = await uploadImage(req.file.buffer, 'food-rescue/delivery-proofs');
+        } catch (uploadError) {
+          throw createError(500, 'Image upload failed. Please try again.');
         }
+    
+        try {
+          const updated = await prisma.volunteerAssignment.update({
+              where: { id: assignment.id },
+              data: { proofImageUrl: cloudinaryResult.url }
+          });
+      
+          res.json({
+            success: true,
+            data: { assignment: updated },
+          });
+        } catch (dbError) {
+          await deleteImage(cloudinaryResult.publicId);
+          throw createError(500, 'Failed to save proof record to database');
+        }
+      } catch (error) {
         next(error);
       }
 };

@@ -2,6 +2,7 @@ const { z } = require('zod');
 const prisma = require('../config/prisma');
 const createError = require('http-errors');
 const { sendNotification, sendNotificationToRole } = require('../services/notification.service');
+const { uploadImage } = require('../services/cloudinary.service');
 
 const createDonationSchema = z.object({
   title: z.string().min(3),
@@ -77,6 +78,7 @@ const getMyDonations = async (req, res, next) => {
       where: { restaurantId: restaurant.id },
       orderBy: { createdAt: 'desc' },
       include: {
+        images: true,
         pickupRequests: {
           include: { ngo: true },
         },
@@ -107,6 +109,7 @@ const getDonationById = async (req, res, next) => {
         restaurantId: restaurant.id,
       },
       include: {
+        images: true,
         pickupRequests: {
           include: { ngo: true, assignments: true },
         },
@@ -290,6 +293,60 @@ const acceptPickupRequest = async (req, res, next) => {
   }
 };
 
+// Upload Donation Image
+const uploadDonationImage = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (!req.file) {
+      throw createError(400, 'No image file provided');
+    }
+
+    const restaurant = await prisma.restaurantProfile.findUnique({
+      where: { userId: req.user.id },
+    });
+
+    const donation = await prisma.donation.findFirst({
+      where: { id, restaurantId: restaurant.id },
+    });
+
+    if (!donation) {
+      throw createError(404, 'Donation not found or unauthorized');
+    }
+
+    // Upload to Cloudinary
+    let cloudinaryResult;
+    try {
+      cloudinaryResult = await uploadImage(req.file.buffer, 'food-rescue/donations');
+    } catch (uploadError) {
+      throw createError(500, 'Image upload failed. Please try again.');
+    }
+
+    // Save to DB
+    try {
+      const donationImage = await prisma.donationImage.create({
+        data: {
+          donationId: donation.id,
+          url: cloudinaryResult.url,
+          publicId: cloudinaryResult.publicId,
+        },
+      });
+
+      res.status(201).json({
+        success: true,
+        data: { image: donationImage },
+      });
+    } catch (dbError) {
+      // If DB fails, attempt to delete from Cloudinary
+      const { deleteImage } = require('../services/cloudinary.service');
+      await deleteImage(cloudinaryResult.publicId);
+      throw createError(500, 'Failed to save image record to database');
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createDonation,
   getMyDonations,
@@ -297,4 +354,5 @@ module.exports = {
   updateDonation,
   getImpactStats,
   acceptPickupRequest,
+  uploadDonationImage,
 };

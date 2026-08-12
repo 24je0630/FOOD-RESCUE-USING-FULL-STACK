@@ -42,6 +42,19 @@ const donationService = {
     const response = await api.post(`/donations/requests/${requestId}/accept`);
     return response.data.data;
   },
+
+  // Upload donation image
+  uploadDonationImage: async (id, file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    
+    const response = await api.post(`/donations/${id}/images`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data.data;
+  },
 };
 
 export default donationService;

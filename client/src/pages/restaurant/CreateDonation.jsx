@@ -11,6 +11,7 @@ import { useAuth } from '../../context/AuthContext';
 import MapView from '../../components/maps/MapView';
 import LocationMarker from '../../components/maps/LocationMarker';
 import { isValidCoordinate } from '../../components/maps/mapUtils';
+import ImageUploader from '../../components/common/ImageUploader';
 
 const CATEGORIES = ['PRODUCE', 'BAKED_GOODS', 'PREPARED_MEALS', 'DAIRY', 'MEAT', 'BEVERAGES', 'OTHER'];
 
@@ -27,6 +28,9 @@ const CreateDonation = () => {
     lat: defaultLat,
     lng: defaultLng
   });
+  
+  const [selectedImage, setSelectedImage] = React.useState(null);
+  const [isUploadingImage, setIsUploadingImage] = React.useState(false);
 
   // Register hidden fields for react-hook-form
   React.useEffect(() => {
@@ -56,8 +60,22 @@ const CreateDonation = () => {
         pickupDeadline: new Date(data.pickupDeadline).toISOString(),
       };
 
-      await donationService.createDonation(payload);
-      toast.success('Donation created successfully!');
+      const createdDonation = await donationService.createDonation(payload);
+      
+      if (selectedImage) {
+        setIsUploadingImage(true);
+        try {
+          await donationService.uploadDonationImage(createdDonation.donation.id, selectedImage);
+          toast.success('Donation and image uploaded successfully!');
+        } catch (imgError) {
+          toast.error('Donation created, but image upload failed. You can retry later.');
+        } finally {
+          setIsUploadingImage(false);
+        }
+      } else {
+        toast.success('Donation created successfully!');
+      }
+
       navigate('/restaurant/donations');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create donation');
@@ -151,6 +169,15 @@ const CreateDonation = () => {
               </div>
 
               <div className="sm:col-span-2">
+                <label className="mb-2 block text-sm font-medium text-gray-700">Donation Image (Optional)</label>
+                <ImageUploader 
+                  onImageSelect={(file) => setSelectedImage(file)}
+                  onImageClear={() => setSelectedImage(null)}
+                  isUploading={isUploadingImage}
+                />
+              </div>
+
+              <div className="sm:col-span-2">
                 <label className="mb-2 block text-sm font-medium text-gray-700">Pinpoint Location on Map</label>
                 <p className="mb-2 text-xs text-gray-500">Click on the map to set the exact pickup location.</p>
                 <MapView 
@@ -171,7 +198,7 @@ const CreateDonation = () => {
 
             <div className="flex justify-end space-x-4">
               <Button type="button" variant="secondary" onClick={() => navigate('/restaurant/donations')}>Cancel</Button>
-              <Button type="submit" isLoading={isSubmitting}>Create Donation</Button>
+              <Button type="submit" isLoading={isSubmitting || isUploadingImage}>Create Donation</Button>
             </div>
           </form>
         </CardContent>
