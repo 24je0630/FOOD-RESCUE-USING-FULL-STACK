@@ -8,6 +8,9 @@ import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import toast from 'react-hot-toast';
 import { MapPin, Clock, Info, CheckCircle } from 'lucide-react';
+import MapView from '../../components/maps/MapView';
+import LocationMarker from '../../components/maps/LocationMarker';
+import { isValidCoordinate } from '../../components/maps/mapUtils';
 
 const DonationDetails = () => {
   const { id } = useParams();
@@ -164,6 +167,19 @@ const DonationDetails = () => {
                   <span>{format(new Date(donation.pickupDeadline), 'MMM d, yyyy h:mm a')}</span>
                 </div>
               </div>
+              
+              {isValidCoordinate(donation.latitude, donation.longitude) && (
+                <div className="pt-4 border-t border-gray-200">
+                  <span className="block font-medium text-gray-900 mb-2">Location Map</span>
+                  <MapView 
+                    center={{ lat: donation.latitude, lng: donation.longitude }}
+                    zoom={15}
+                    className="h-48 w-full rounded-md shadow-sm z-0"
+                  >
+                    <LocationMarker lat={donation.latitude} lng={donation.longitude} />
+                  </MapView>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

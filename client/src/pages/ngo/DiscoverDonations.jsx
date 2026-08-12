@@ -1,8 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
 import { format } from 'date-fns';
 import ngoService from '../../services/ngoService';
 import Loader from '../../components/ui/Loader';
@@ -11,19 +8,17 @@ import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import Button from '../../components/ui/Button';
 import { Card, CardContent } from '../../components/ui/Card';
-import { Search, MapPin, List } from 'lucide-react';
-
-// Fix for default leaflet icons in React
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
+import { Search, MapPin, List, Compass } from 'lucide-react';
+import MapView from '../../components/maps/MapView';
+import LocationMarker, { ICONS } from '../../components/maps/LocationMarker';
+import { getUserLocation, isValidCoordinate, formatDistance } from '../../components/maps/mapUtils';
+import { useAuth } from '../../context/AuthContext';
+import toast from 'react-hot-toast';
 
 const CATEGORIES = ['ALL', 'PRODUCE', 'BAKED_GOODS', 'PREPARED_MEALS', 'DAIRY', 'MEAT', 'BEVERAGES', 'OTHER'];
 
 const DiscoverDonations = () => {
+  const { user } = useAuth();
   const [donations, setDonations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'map'
@@ -31,28 +26,43 @@ const DiscoverDonations = () => {
   // Filters
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('ALL');
-  // Mocking NGO location for distance filter demonstration
-  const [lat, _setLat] = useState('40.7128');
-  const [lng, _setLng] = useState('-74.0060');
+  const [radius, setRadius] = useState('50'); // Default 50km
+  
+  // Location
+  const [location, setLocation] = useState(null);
+  const [locationError, setLocationError] = useState('');
+  const [isLocating, setIsLocating] = useState(false);
 
   const navigate = useNavigate();
 
-  const fetchDonations = async () => {
+  // Try to use fallback NGO profile location on mount if available
+  useEffect(() => {
+    if (user?.ngoProfile?.latitude && user?.ngoProfile?.longitude) {
+      setLocation({
+        lat: user.ngoProfile.latitude,
+        lng: user.ngoProfile.longitude
+      });
+    }
+  }, [user]);
+
+  const fetchDonations = async (currentLoc = location) => {
     setLoading(true);
     try {
       const filters = {};
       if (search) filters.search = search;
       if (category !== 'ALL') filters.category = category;
       
-      // We pass lat/lng/radius to demo the haversine distance filtering on backend
-      filters.lat = lat;
-      filters.lng = lng;
-      filters.radius = '50'; // 50km radius default
+      if (currentLoc && isValidCoordinate(currentLoc.lat, currentLoc.lng)) {
+        filters.lat = currentLoc.lat;
+        filters.lng = currentLoc.lng;
+        filters.radius = radius;
+      }
 
       const data = await ngoService.discoverDonations(filters);
       setDonations(data.donations || []);
     } catch (error) {
       console.error('Failed to load donations', error);
+      toast.error('Failed to load donations');
     } finally {
       setLoading(false);
     }
@@ -61,12 +71,42 @@ const DiscoverDonations = () => {
   useEffect(() => {
     fetchDonations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category]); // re-fetch when category changes
+  }, [category, radius, location]); 
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     fetchDonations();
   };
+
+  const handleGetLocation = async () => {
+    setIsLocating(true);
+    setLocationError('');
+    try {
+      const pos = await getUserLocation();
+      setLocation(pos);
+      toast.success('Location updated');
+    } catch (err) {
+      setLocationError(err.message);
+      toast.error(err.message || 'Failed to get location');
+    } finally {
+      setIsLocating(false);
+    }
+  };
+
+  // Compile map bounds based on current location and donation locations
+  const mapBounds = [];
+  if (location && isValidCoordinate(location.lat, location.lng)) {
+    mapBounds.push([location.lat, location.lng]);
+  }
+  donations.forEach(d => {
+    // Stage 15 data models state donation coordinates reside either on donation.latitude/longitude OR donation.restaurant.latitude/longitude. 
+    // Usually fallback to restaurant coords for pickup if not specified explicitly on donation.
+    const lat = d.latitude || d.restaurant?.latitude;
+    const lng = d.longitude || d.restaurant?.longitude;
+    if (isValidCoordinate(lat, lng)) {
+      mapBounds.push([lat, lng]);
+    }
+  });
 
   return (
     <div className="space-y-6">
@@ -85,27 +125,53 @@ const DiscoverDonations = () => {
       {/* Filters */}
       <Card>
         <CardContent className="p-4">
-          <form onSubmit={handleSearchSubmit} className="flex flex-col space-y-4 sm:flex-row sm:space-x-4 sm:space-y-0 items-end">
-            <div className="flex-1">
-              <label className="mb-1 block text-sm font-medium text-gray-700">Search</label>
-              <Input 
-                placeholder="Search food, descriptions..." 
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+          <div className="flex flex-col space-y-4 lg:flex-row lg:space-x-4 lg:space-y-0 items-end">
+            <form onSubmit={handleSearchSubmit} className="flex-1 flex flex-col space-y-4 sm:flex-row sm:space-x-4 sm:space-y-0 items-end">
+              <div className="flex-1">
+                <label className="mb-1 block text-sm font-medium text-gray-700">Search</label>
+                <Input 
+                  placeholder="Search food, descriptions..." 
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              <div className="w-full sm:w-48">
+                <label className="mb-1 block text-sm font-medium text-gray-700">Category</label>
+                <Select value={category} onChange={(e) => setCategory(e.target.value)}>
+                  {CATEGORIES.map(cat => (
+                    <option key={cat} value={cat}>{cat === 'ALL' ? 'All Categories' : cat.replace('_', ' ')}</option>
+                  ))}
+                </Select>
+              </div>
+              <div className="w-full sm:w-32">
+                <label className="mb-1 block text-sm font-medium text-gray-700">Radius (km)</label>
+                <Select value={radius} onChange={(e) => setRadius(e.target.value)}>
+                  <option value="5">5 km</option>
+                  <option value="10">10 km</option>
+                  <option value="25">25 km</option>
+                  <option value="50">50 km</option>
+                  <option value="100">100 km</option>
+                </Select>
+              </div>
+              <Button type="submit">
+                <Search className="mr-2 h-4 w-4" /> Search
+              </Button>
+            </form>
+            <div className="w-full lg:w-auto mt-4 lg:mt-0 flex items-center justify-end">
+              <Button 
+                variant="secondary" 
+                onClick={handleGetLocation} 
+                isLoading={isLocating}
+                title="Use Device Location"
+              >
+                <Compass className="mr-2 h-4 w-4 text-emerald-600" /> 
+                {location ? 'Update Location' : 'Locate Me'}
+              </Button>
             </div>
-            <div className="w-full sm:w-48">
-              <label className="mb-1 block text-sm font-medium text-gray-700">Category</label>
-              <Select value={category} onChange={(e) => setCategory(e.target.value)}>
-                {CATEGORIES.map(cat => (
-                  <option key={cat} value={cat}>{cat === 'ALL' ? 'All Categories' : cat.replace('_', ' ')}</option>
-                ))}
-              </Select>
-            </div>
-            <Button type="submit">
-              <Search className="mr-2 h-4 w-4" /> Search
-            </Button>
-          </form>
+          </div>
+          {locationError && (
+            <p className="mt-2 text-sm text-red-500">{locationError}</p>
+          )}
         </CardContent>
       </Card>
 
@@ -117,7 +183,6 @@ const DiscoverDonations = () => {
             donations.map((donation) => (
               <Card key={donation.id} className="flex flex-col overflow-hidden hover:shadow-md transition-shadow">
                 <div className="bg-gray-100 h-32 flex items-center justify-center border-b border-gray-200 text-gray-400">
-                  {/* Placeholder for image */}
                   <span className="text-sm">No Image</span>
                 </div>
                 <CardContent className="flex flex-1 flex-col p-4">
@@ -136,7 +201,7 @@ const DiscoverDonations = () => {
                     </div>
                     {donation.distanceKm !== undefined && (
                       <div className="flex items-center">
-                        <MapPin className="mr-1 h-3 w-3" /> {donation.distanceKm.toFixed(1)} km away
+                        <MapPin className="mr-1 h-3 w-3" /> {formatDistance(donation.distanceKm)} away
                       </div>
                     )}
                   </div>
@@ -157,44 +222,50 @@ const DiscoverDonations = () => {
           )}
         </div>
       ) : (
-        <div className="h-[600px] w-full rounded-xl overflow-hidden border border-gray-200">
-          <MapContainer 
-            center={[parseFloat(lat), parseFloat(lng)]} 
-            zoom={12} 
-            style={{ height: '100%', width: '100%' }}
+        <div className="w-full rounded-xl overflow-hidden border border-gray-200 shadow-sm relative">
+          <MapView 
+            center={location}
+            zoom={12}
+            bounds={mapBounds}
+            className="h-[600px] w-full z-0"
           >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            
             {/* NGO Marker */}
-            <Marker position={[parseFloat(lat), parseFloat(lng)]}>
-              <Popup>
-                <strong>Your Location</strong>
-              </Popup>
-            </Marker>
+            {location && isValidCoordinate(location.lat, location.lng) && (
+              <LocationMarker 
+                lat={location.lat} 
+                lng={location.lng} 
+                icon={ICONS.blue}
+                popup={<strong>Your Search Origin</strong>}
+              />
+            )}
 
             {/* Donation Markers */}
-            {donations.map(donation => (
-              donation.restaurant?.latitude && donation.restaurant?.longitude ? (
-                <Marker 
-                  key={donation.id} 
-                  position={[donation.restaurant.latitude, donation.restaurant.longitude]}
-                >
-                  <Popup>
-                    <div className="p-1">
-                      <h3 className="font-semibold">{donation.title}</h3>
-                      <p className="text-xs mt-1 mb-2 text-gray-600">{donation.quantity} {donation.unit}</p>
-                      <Button size="sm" onClick={() => navigate(`/ngo/donations/${donation.id}`)}>
-                        View Details
-                      </Button>
-                    </div>
-                  </Popup>
-                </Marker>
-              ) : null
-            ))}
-          </MapContainer>
+            {donations.map(donation => {
+              const dLat = donation.latitude || donation.restaurant?.latitude;
+              const dLng = donation.longitude || donation.restaurant?.longitude;
+              if (isValidCoordinate(dLat, dLng)) {
+                return (
+                  <LocationMarker 
+                    key={donation.id} 
+                    lat={dLat} 
+                    lng={dLng} 
+                    icon={ICONS.green}
+                    popup={(
+                      <div className="p-1 min-w-[150px]">
+                        <h3 className="font-semibold">{donation.title}</h3>
+                        <p className="text-xs mt-1 text-gray-600">{donation.quantity} {donation.unit}</p>
+                        <p className="text-xs text-red-500 mb-2">by {format(new Date(donation.pickupDeadline), 'h:mm a')}</p>
+                        <Button size="sm" className="w-full" onClick={() => navigate(`/ngo/donations/${donation.id}`)}>
+                          Details
+                        </Button>
+                      </div>
+                    )}
+                  />
+                );
+              }
+              return null;
+            })}
+          </MapView>
         </div>
       )}
     </div>

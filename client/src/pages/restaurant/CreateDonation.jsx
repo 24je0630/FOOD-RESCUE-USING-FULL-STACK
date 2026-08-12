@@ -7,12 +7,43 @@ import Select from '../../components/ui/Select';
 import Button from '../../components/ui/Button';
 import donationService from '../../services/donationService';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../context/AuthContext';
+import MapView from '../../components/maps/MapView';
+import LocationMarker from '../../components/maps/LocationMarker';
+import { isValidCoordinate } from '../../components/maps/mapUtils';
 
 const CATEGORIES = ['PRODUCE', 'BAKED_GOODS', 'PREPARED_MEALS', 'DAIRY', 'MEAT', 'BEVERAGES', 'OTHER'];
 
 const CreateDonation = () => {
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
+  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm();
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // Try to default to restaurant profile location if available
+  const defaultLat = user?.restaurantProfile?.latitude || 40.7128;
+  const defaultLng = user?.restaurantProfile?.longitude || -74.0060;
+
+  const [selectedLocation, setSelectedLocation] = React.useState({
+    lat: defaultLat,
+    lng: defaultLng
+  });
+
+  // Register hidden fields for react-hook-form
+  React.useEffect(() => {
+    register('latitude');
+    register('longitude');
+    setValue('latitude', selectedLocation.lat);
+    setValue('longitude', selectedLocation.lng);
+  }, [register, setValue, selectedLocation]);
+
+  const handleMapClick = (e) => {
+    const { lat, lng } = e.latlng;
+    if (isValidCoordinate(lat, lng)) {
+      setSelectedLocation({ lat, lng });
+      setValue('latitude', lat);
+      setValue('longitude', lng);
+    }
+  };
 
   const onSubmit = async (data) => {
     try {
@@ -117,6 +148,24 @@ const CreateDonation = () => {
                   {...register('pickupAddress', { required: 'Pickup address is required' })} 
                   error={errors.pickupAddress?.message} 
                 />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="mb-2 block text-sm font-medium text-gray-700">Pinpoint Location on Map</label>
+                <p className="mb-2 text-xs text-gray-500">Click on the map to set the exact pickup location.</p>
+                <MapView 
+                  center={selectedLocation} 
+                  zoom={13} 
+                  onClick={handleMapClick}
+                >
+                  <LocationMarker 
+                    lat={selectedLocation.lat} 
+                    lng={selectedLocation.lng} 
+                    popup={<span>Pickup Location</span>} 
+                  />
+                </MapView>
+                <input type="hidden" {...register('latitude')} />
+                <input type="hidden" {...register('longitude')} />
               </div>
             </div>
 

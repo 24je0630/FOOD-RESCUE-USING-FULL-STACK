@@ -9,6 +9,9 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import toast from 'react-hot-toast';
 import { MapPin, Phone, User, CheckCircle, Truck, Package, Camera, Upload } from 'lucide-react';
+import MapView from '../../components/maps/MapView';
+import LocationMarker, { ICONS } from '../../components/maps/LocationMarker';
+import { isValidCoordinate } from '../../components/maps/mapUtils';
 
 const VolunteerPickupDetails = () => {
   const { id } = useParams();
@@ -92,6 +95,17 @@ const VolunteerPickupDetails = () => {
   const currentStatusIndex = workflow.findIndex(w => w.status === assignment.status);
   // If COMPLETED, it acts like DELIVERED for volunteer view.
   const activeIndex = assignment.status === 'COMPLETED' ? workflow.length - 1 : currentStatusIndex;
+
+  const mapBounds = [];
+  const pickupLat = donation.latitude || restaurant?.latitude;
+  const pickupLng = donation.longitude || restaurant?.longitude;
+  if (isValidCoordinate(pickupLat, pickupLng)) {
+    mapBounds.push([pickupLat, pickupLng]);
+  }
+  
+  if (isValidCoordinate(ngo?.latitude, ngo?.longitude)) {
+    mapBounds.push([ngo.latitude, ngo.longitude]);
+  }
 
   return (
     <div className="space-y-6">
@@ -227,6 +241,47 @@ const VolunteerPickupDetails = () => {
           </CardContent>
         </Card>
       </div>
+
+      {mapBounds.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Route Map</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <MapView 
+              bounds={mapBounds} 
+              className="h-[400px] w-full rounded-md shadow-sm z-0"
+            >
+              {isValidCoordinate(pickupLat, pickupLng) && (
+                <LocationMarker 
+                  lat={pickupLat} 
+                  lng={pickupLng} 
+                  icon={ICONS.blue} 
+                  popup={
+                    <div className="p-1">
+                      <h3 className="font-semibold text-blue-700">Pickup</h3>
+                      <p className="text-sm">{restaurant?.organizationName}</p>
+                    </div>
+                  } 
+                />
+              )}
+              {isValidCoordinate(ngo?.latitude, ngo?.longitude) && (
+                <LocationMarker 
+                  lat={ngo.latitude} 
+                  lng={ngo.longitude} 
+                  icon={ICONS.green} 
+                  popup={
+                    <div className="p-1">
+                      <h3 className="font-semibold text-emerald-700">Delivery</h3>
+                      <p className="text-sm">{ngo?.organizationName}</p>
+                    </div>
+                  } 
+                />
+              )}
+            </MapView>
+          </CardContent>
+        </Card>
+      )}
 
     </div>
   );
