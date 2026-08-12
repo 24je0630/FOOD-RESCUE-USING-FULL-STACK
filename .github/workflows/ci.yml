@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test-and-lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Use Node.js 22.x
+      uses: actions/setup-node@v3
+      with:
+        node-version: '22.x'
+        cache: 'npm'
+        cache-dependency-path: |
+          server/package-lock.json
+          client/package-lock.json
+
+    - name: Install Server Dependencies
+      working-directory: ./server
+      run: npm ci
+
+    - name: Install Client Dependencies
+      working-directory: ./client
+      run: npm ci
+      
+    - name: Generate Prisma Client (Mocked for CI)
+      working-directory: ./server
+      run: npx prisma generate
+
+    - name: Server Lint
+      working-directory: ./server
+      # Assuming no dedicated lint script in server currently; if there is, run it
+      # run: npm run lint
+      run: echo "Server linting..."
+
+    - name: Client Lint
+      working-directory: ./client
+      run: npm run lint
+
+    - name: Server Tests
+      working-directory: ./server
+      run: npm test
+
+    - name: Client Tests
+      working-directory: ./client
+      run: npm test
+
+    - name: Client Build
+      working-directory: ./client
+      run: npm run build

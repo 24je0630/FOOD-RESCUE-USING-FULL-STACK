@@ -22,6 +22,11 @@ app.use(morgan('dev'));
 // API Routes
 app.use('/api', routes);
 
+// Health Check Endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // 404 Handler
 app.use((req, res, next) => {
   next(createError(404, 'Endpoint not found'));
