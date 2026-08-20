@@ -10,6 +10,7 @@ COPY prisma ./prisma/
 
 # Install production dependencies and generate prisma client
 RUN npm ci
+RUN npx prisma generate
 
 # Copy application source
 COPY . .
